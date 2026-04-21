@@ -7,6 +7,15 @@ build/
 # IDE
 .idea/
 .idea/**
+.idea/.gitignore
+.idea/caches/deviceStreaming.xml
+.idea/flutter_scaffold.iml
+.idea/libraries/Dart_Packages.xml
+.idea/libraries/Dart_SDK.xml
+.idea/markdown.xml
+.idea/misc.xml
+.idea/modules.xml
+.idea/vcs.xml
 .vscode/
 *.iml
 

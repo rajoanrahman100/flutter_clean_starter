@@ -1,4 +1,4 @@
-name: flutter_scaffold
+name: flutter_clean_starter
 description: Skip the boilerplate. Start building Flutter apps the right way.
 version: 0.1.0+1
 homepage: https://github.com/rajoanrahman100/flutter_clean_starter
@@ -17,4 +17,4 @@ dev_dependencies:
   test: ^1.24.0
 
 executables:
-  flutter_scaffold: flutter_scaffold
+  flutter_scaffold: flutter_clean_starter

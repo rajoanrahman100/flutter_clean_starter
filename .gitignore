@@ -1,10 +1,12 @@
 # Dart
+
 .dart_tool/
 .packages
 build/
 
 # IDE
 .idea/
+.idea/**
 .vscode/
 *.iml
 

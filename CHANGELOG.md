@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1
+
+- Fix generated `UseCase` base class by adding a `const` constructor for constructor compatibility.
+- Prevent `const Get...UseCase(...)` constructor errors in generated projects.
+
 ## 0.1.0+1
 
 - Initial release

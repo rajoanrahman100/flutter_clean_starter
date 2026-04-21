@@ -93,6 +93,10 @@ class ProjectGenerator {
     final flavorFiles = {
       'lib/core/config/app_config.dart': _appConfig(),
       'lib/core/config/flavor.dart': _flavorEnum(),
+      'lib/main_dev.dart': _flavorMain('dev'),
+      'lib/main_staging.dart': _flavorMain('staging'),
+      'lib/main_prod.dart': _flavorMain('prod'),
+      'FLAVORS.md': _flavorGuide(),
     };
 
     for (final entry in flavorFiles.entries) {
@@ -101,7 +105,87 @@ class ProjectGenerator {
       await file.writeAsString(entry.value);
     }
 
+    await _configureAndroidFlavors(projectDir);
+
     Console.success('Flavor config written.');
+  }
+
+  Future<void> _configureAndroidFlavors(Directory projectDir) async {
+    final ktsFile = File(p.join(projectDir.path, 'android/app/build.gradle.kts'));
+    final groovyFile = File(p.join(projectDir.path, 'android/app/build.gradle'));
+
+    if (await ktsFile.exists()) {
+      final content = await ktsFile.readAsString();
+      if (content.contains('flavorDimensions += "environment"')) return;
+
+      final insertionPoint = '    buildTypes {';
+      if (!content.contains(insertionPoint)) return;
+
+      final updated = content.replaceFirst(
+        insertionPoint,
+        '''
+    flavorDimensions += "environment"
+
+    productFlavors {
+        create("dev") {
+            dimension = "environment"
+            applicationIdSuffix = ".dev"
+            resValue("string", "app_name", "${_titleCase(config.projectName)} Dev")
+        }
+        create("staging") {
+            dimension = "environment"
+            applicationIdSuffix = ".stg"
+            resValue("string", "app_name", "${_titleCase(config.projectName)} Staging")
+        }
+        create("prod") {
+            dimension = "environment"
+            resValue("string", "app_name", "${_titleCase(config.projectName)}")
+        }
+    }
+
+    buildTypes {
+''',
+      );
+
+      await ktsFile.writeAsString(updated);
+      return;
+    }
+
+    if (await groovyFile.exists()) {
+      final content = await groovyFile.readAsString();
+      if (content.contains('flavorDimensions "environment"')) return;
+
+      final insertionPoint = '    buildTypes {';
+      if (!content.contains(insertionPoint)) return;
+
+      final updated = content.replaceFirst(
+        insertionPoint,
+        '''
+    flavorDimensions "environment"
+
+    productFlavors {
+        dev {
+            dimension "environment"
+            applicationIdSuffix ".dev"
+            resValue "string", "app_name", "${_titleCase(config.projectName)} Dev"
+        }
+        staging {
+            dimension "environment"
+            applicationIdSuffix ".stg"
+            resValue "string", "app_name", "${_titleCase(config.projectName)} Staging"
+        }
+        prod {
+            dimension "environment"
+            resValue "string", "app_name", "${_titleCase(config.projectName)}"
+        }
+    }
+
+    buildTypes {
+''',
+      );
+
+      await groovyFile.writeAsString(updated);
+    }
   }
 
   Future<void> _runPubGet(Directory projectDir) async {
@@ -149,6 +233,8 @@ class AppConfig {
     required this.appName,
   });
 
+  static late AppConfig current;
+
   static const dev = AppConfig(
     flavor: Flavor.dev,
     baseUrl: 'https://dev-api.yourserver.com',
@@ -166,10 +252,73 @@ class AppConfig {
     baseUrl: 'https://api.yourserver.com',
     appName: '${config.projectName}',
   );
+
+  static void setFlavor(Flavor flavor) {
+    switch (flavor) {
+      case Flavor.dev:
+        current = dev;
+        break;
+      case Flavor.staging:
+        current = staging;
+        break;
+      case Flavor.prod:
+        current = prod;
+        break;
+    }
+  }
 }
 ''';
 
   String _flavorEnum() => '''
 enum Flavor { dev, staging, prod }
 ''';
+
+  String _flavorMain(String flavor) {
+    final flavorEnum = flavor == 'prod' ? 'Flavor.prod' : 'Flavor.$flavor';
+    return '''
+import 'package:flutter/material.dart';
+import 'di/injection.dart';
+import 'core/config/app_config.dart';
+import 'core/config/flavor.dart';
+import 'app.dart';
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  AppConfig.setFlavor($flavorEnum);
+  await configureDependencies();
+  runApp(const App());
+}
+''';
+  }
+
+  String _flavorGuide() => '''
+# Flavor Setup
+
+This project was generated with flavor support.
+
+## Run Commands
+
+```bash
+flutter run --flavor dev -t lib/main_dev.dart
+flutter run --flavor staging -t lib/main_staging.dart
+flutter run --flavor prod -t lib/main_prod.dart
+```
+
+## Android
+
+Android product flavors are already configured in `android/app/build.gradle.kts` (or `build.gradle`).
+
+## iOS
+
+iOS flavors still require Xcode schemes/build configurations to be set up manually.
+Use separate schemes (for example: `dev`, `staging`, `prod`) and point each to the matching Dart target above.
+''';
+
+  String _titleCase(String value) {
+    return value
+        .split(RegExp(r'[_\-\s]+'))
+        .where((e) => e.isNotEmpty)
+        .map((part) => part[0].toUpperCase() + part.substring(1))
+        .join(' ');
+  }
 }

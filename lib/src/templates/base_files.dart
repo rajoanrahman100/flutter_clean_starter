@@ -8,12 +8,12 @@ class BaseFiles {
       'lib/core/usecase/usecase.dart': _usecase(),
       'lib/core/network/dio_client.dart': _dioClient(),
       'lib/core/network/api_interceptor.dart': _apiInterceptor(),
-      'lib/core/constants/app_constants.dart': _appConstants(),
+      'lib/core/constants/app_constants.dart': _appConstants(config.useFlavors),
       'lib/core/router/app_router.dart': _appRouter(config.features),
       'lib/di/injection.dart': _injection(),
       'lib/di/injection.config.dart': _injectionConfig(),
-      'lib/main.dart': _main(config.projectName),
-      'lib/app.dart': _app(config.projectName),
+      'lib/main.dart': _main(config.useFlavors),
+      'lib/app.dart': _app(config.projectName, config.useFlavors),
     };
 
     // Generate boilerplate for every selected feature
@@ -147,13 +147,27 @@ class ApiInterceptor extends Interceptor {
 }
 ''';
 
-  static String _appConstants() => '''
+  static String _appConstants(bool useFlavors) {
+    if (useFlavors) {
+      return '''
+import '../config/app_config.dart';
+
+class AppConstants {
+  static String get baseUrl => AppConfig.current.baseUrl;
+  static String get appName => AppConfig.current.appName;
+  static const int connectionTimeout = 30;
+}
+''';
+    }
+
+    return '''
 class AppConstants {
   static const String baseUrl = 'https://api.yourserver.com';
   static const String appName = 'App';
   static const int connectionTimeout = 30;
 }
 ''';
+  }
 
   static String _appRouter(List<String> features) {
     final imports = features.map((f) =>
@@ -209,21 +223,24 @@ extension GetItInjectableX on GetIt {
 }
 ''';
 
-  static String _main(String projectName) => '''
+  static String _main(bool useFlavors) => '''
 import 'package:flutter/material.dart';
 import 'di/injection.dart';
+${useFlavors ? "import 'core/config/app_config.dart';\nimport 'core/config/flavor.dart';" : ''}
 import 'app.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+${useFlavors ? '  AppConfig.setFlavor(Flavor.prod);' : ''}
   await configureDependencies();
   runApp(const App());
 }
 ''';
 
-  static String _app(String projectName) => '''
+  static String _app(String projectName, bool useFlavors) => '''
 import 'package:flutter/material.dart';
 import 'core/router/app_router.dart';
+${useFlavors ? "import 'core/constants/app_constants.dart';" : ''}
 
 class App extends StatelessWidget {
   const App({super.key});
@@ -231,7 +248,7 @@ class App extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: '$projectName',
+      title: ${useFlavors ? 'AppConstants.appName' : "'$projectName'"},
       debugShowCheckedModeBanner: false,
       routerConfig: AppRouter.router,
       theme: ThemeData(
@@ -319,7 +336,7 @@ import '../repositories/${feature}_repository.dart';
 class Get${className}UseCase extends UseCase<${className}Entity, NoParams> {
   final ${className}Repository repository;
 
-  const Get${className}UseCase(this.repository);
+  Get${className}UseCase(this.repository);
 
   @override
   Future<Either<Failure, ${className}Entity>> call(NoParams params) {
@@ -385,7 +402,7 @@ import '${feature}_state.dart';
 class ${className}Cubit extends $superClass {
   final Get${className}UseCase _get${className}UseCase;
 
-  ${className}Cubit(this._get${className}UseCase) : super(const ${className}Initial());
+  ${className}Cubit(this._get${className}UseCase) : super( ${className}Initial());
 
   Future<void> load${className}() async {
     emit(const ${className}Loading());
@@ -411,7 +428,7 @@ import '${feature}_state.dart';
 class ${className}Bloc extends $superClass {
   final Get${className}UseCase _get${className}UseCase;
 
-  ${className}Bloc(this._get${className}UseCase) : super(const ${className}Initial()) {
+  ${className}Bloc(this._get${className}UseCase) : super( ${className}Initial()) {
     on<Load${className}Event>(_onLoad);
   }
 

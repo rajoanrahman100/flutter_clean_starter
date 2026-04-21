@@ -19,7 +19,7 @@ from a single interactive command.
 ## Installation
 
 ```bash
-dart pub global activate flutter_scaffold
+dart pub global activate flutter_clean_starter
 ```
 
 Make sure your PATH includes the pub cache bin directory:
@@ -32,7 +32,7 @@ export PATH="$PATH":"$HOME/.pub-cache/bin"
 ## Usage
 
 ```bash
-flutter_scaffold create
+flutter_clean_starter create
 ```
 
 The CLI will guide you through:

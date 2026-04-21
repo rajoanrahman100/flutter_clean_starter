@@ -1,5 +1,5 @@
 // Install the CLI tool:
-//   dart pub global activate flutter_scaffold
+//   dart pub global activate flutter_clean_starter
 //
 // Then run from any directory:
-//   flutter_scaffold create
+//   flutter_clean_starter create

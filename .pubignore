@@ -1,0 +1,17 @@
+# IDE files
+.idea/
+.vscode/
+*.iml
+
+# Dart tool cache
+.dart_tool/
+.packages
+
+# Lock file — not needed in published packages
+pubspec.lock
+
+# Build output
+build/
+
+# macOS
+.DS_Store

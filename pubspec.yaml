@@ -1,6 +1,9 @@
 name: flutter_scaffold
-description: A CLI tool to scaffold Flutter projects with Clean Architecture.
+description: Skip the boilerplate. Start building Flutter apps the right way.
 version: 0.1.0
+homepage: https://github.com/rajoanrahman100/flutter_clean_starter
+repository: https://github.com/rajoanrahman100/flutter_clean_starter
+issue_tracker: https://github.com/rajoanrahman100/flutter_clean_starter
 
 environment:
   sdk: '>=3.0.0 <4.0.0'

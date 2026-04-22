@@ -1,9 +1,8 @@
 # Changelog
 
-## 0.1.1
+## 0.1.2
 
-- Fix generated `UseCase` base class by adding a `const` constructor for constructor compatibility.
-- Prevent `const Get...UseCase(...)` constructor errors in generated projects.
+- Added GET,PUT,POST and PATCH methods with DioClient
 
 ## 0.1.0+1
 

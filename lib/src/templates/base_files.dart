@@ -13,7 +13,12 @@ class BaseFiles {
       'lib/di/injection.dart': _injection(),
       'lib/di/injection.config.dart': _injectionConfig(),
       'lib/main.dart': _main(config.useFlavors),
-      'lib/app.dart': _app(config.projectName, config.useFlavors),
+      'lib/app.dart': _app(
+        config.projectName,
+        config.useFlavors,
+        config.features,
+        config.stateManagement,
+      ),
     };
 
     // Generate boilerplate for every selected feature
@@ -321,8 +326,18 @@ ${useFlavors ? '  AppConfig.setFlavor(Flavor.prod);' : ''}
 }
 ''';
 
-  static String _app(String projectName, bool useFlavors) => '''
+  static String _app(
+    String projectName,
+    bool useFlavors,
+    List<String> features,
+    String stateManagement,
+  ) {
+    final titleValue = useFlavors ? 'AppConstants.appName' : "'$projectName'";
+
+    if (stateManagement == 'Riverpod') {
+      return '''
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/router/app_router.dart';
 ${useFlavors ? "import 'core/constants/app_constants.dart';" : ''}
 
@@ -331,8 +346,8 @@ class App extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      title: ${useFlavors ? 'AppConstants.appName' : "'$projectName'"},
+    final app = MaterialApp.router(
+      title: $titleValue,
       debugShowCheckedModeBanner: false,
       routerConfig: AppRouter.router,
       theme: ThemeData(
@@ -340,9 +355,65 @@ class App extends StatelessWidget {
         useMaterial3: true,
       ),
     );
+
+    return ProviderScope(child: app);
   }
 }
 ''';
+    }
+
+    final suffix = stateManagement == 'Cubit' ? 'cubit' : 'bloc';
+    final typeName = stateManagement == 'Cubit' ? 'Cubit' : 'Bloc';
+    final blocImports = features
+        .map((f) => "import 'features/$f/presentation/bloc/${f}_$suffix.dart';")
+        .join('\n');
+    final eventImports = stateManagement == 'Cubit'
+        ? ''
+        : features
+            .map((f) => "import 'features/$f/presentation/bloc/${f}_event.dart';")
+            .join('\n');
+    final providers = features.map((f) {
+      final className = _className(f);
+      if (stateManagement == 'Cubit') {
+        return "        BlocProvider<${className}$typeName>(create: (_) => sl<${className}$typeName>()..load$className()),";
+      }
+      return "        BlocProvider<${className}$typeName>(create: (_) => sl<${className}$typeName>()..add(const Load${className}Event())),";
+    }).join('\n');
+
+    return '''
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'core/router/app_router.dart';
+import 'di/injection.dart';
+${useFlavors ? "import 'core/constants/app_constants.dart';" : ''}
+$blocImports
+$eventImports
+
+class App extends StatelessWidget {
+  const App({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final app = MaterialApp.router(
+      title: $titleValue,
+      debugShowCheckedModeBanner: false,
+      routerConfig: AppRouter.router,
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        useMaterial3: true,
+      ),
+    );
+
+    return MultiBlocProvider(
+      providers: [
+$providers
+      ],
+      child: app,
+    );
+  }
+}
+''';
+  }
 
   // ── Per-feature file generation ───────────────────────────────
 

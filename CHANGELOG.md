@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.4
+
+- Generated `app.dart` now includes `MultiBlocProvider` for BLoC/Cubit projects.
+- Auto-registers providers for selected features using `sl<...>()` and triggers initial load calls.
+- Generated Riverpod apps now wrap root with `ProviderScope`.
+
 ## 0.1.3
 
 - Updated generated `injection.dart` to auto-register `SharedPreferences`, `ApiInterceptor`, and `DioClient` with `registerLazySingleton`.

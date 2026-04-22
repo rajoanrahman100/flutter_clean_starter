@@ -262,12 +262,32 @@ $routes
   static String _injection() => '''
 import 'package:get_it/get_it.dart';
 import 'package:injectable/injectable.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../core/network/api_interceptor.dart';
+import '../core/network/dio_client.dart';
 import 'injection.config.dart';
 
 final sl = GetIt.instance;
 
 @InjectableInit()
-Future<void> configureDependencies() async => sl.init();
+Future<void> configureDependencies() async {
+  await sl.init();
+
+  final sharedPreferences = await SharedPreferences.getInstance();
+  if (!sl.isRegistered<SharedPreferences>()) {
+    sl.registerLazySingleton<SharedPreferences>(() => sharedPreferences);
+  }
+
+  if (!sl.isRegistered<ApiInterceptor>()) {
+    sl.registerLazySingleton<ApiInterceptor>(() => ApiInterceptor());
+  }
+
+  if (!sl.isRegistered<DioClient>()) {
+    sl.registerLazySingleton<DioClient>(
+      () => DioClient(sl<ApiInterceptor>()),
+    );
+  }
+}
 ''';
 
   static String _injectionConfig() => '''

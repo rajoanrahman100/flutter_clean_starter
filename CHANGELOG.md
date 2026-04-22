@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.3
+
+- Updated generated `injection.dart` to auto-register `SharedPreferences`, `ApiInterceptor`, and `DioClient` with `registerLazySingleton`.
+- Made generated DI setup idempotent using `isRegistered<T>()` checks.
+
 ## 0.1.2
 
 - Added GET,PUT,POST and PATCH methods with DioClient

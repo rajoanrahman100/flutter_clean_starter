@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.5
+
+- Fixed generated `injection.dart` to register feature-level repositories, use cases, and BLoC/Cubit factories in GetIt.
+- Prevents runtime errors like `Object/factory with type AuthCubit is not registered inside GetIt`.
+
 ## 0.1.4
 
 - Generated `app.dart` now includes `MultiBlocProvider` for BLoC/Cubit projects.

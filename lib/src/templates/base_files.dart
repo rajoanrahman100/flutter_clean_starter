@@ -10,7 +10,10 @@ class BaseFiles {
       'lib/core/network/api_interceptor.dart': _apiInterceptor(),
       'lib/core/constants/app_constants.dart': _appConstants(config.useFlavors),
       'lib/core/router/app_router.dart': _appRouter(config.features),
-      'lib/di/injection.dart': _injection(),
+      'lib/di/injection.dart': _injection(
+        config.features,
+        config.stateManagement,
+      ),
       'lib/di/injection.config.dart': _injectionConfig(),
       'lib/main.dart': _main(config.useFlavors),
       'lib/app.dart': _app(
@@ -264,12 +267,48 @@ $routes
 ''';
   }
 
-  static String _injection() => '''
+  static String _injection(List<String> features, String stateManagement) {
+    final isCubit = stateManagement == 'Cubit';
+    final blocFile = isCubit ? 'cubit' : 'bloc';
+    final blocType = isCubit ? 'Cubit' : 'Bloc';
+
+    final featureImports = features.map((feature) {
+      return '''
+import '../features/$feature/domain/repositories/${feature}_repository.dart';
+import '../features/$feature/domain/usecases/get_${feature}_usecase.dart';
+import '../features/$feature/data/repositories/${feature}_repository_impl.dart';
+import '../features/$feature/presentation/bloc/${feature}_$blocFile.dart';
+''';
+    }).join('\n');
+
+    final featureRegistrations = features.map((feature) {
+      final className = _className(feature);
+      return '''
+  if (!sl.isRegistered<${className}Repository>()) {
+    sl.registerLazySingleton<${className}Repository>(
+      () => const ${className}RepositoryImpl(),
+    );
+  }
+  if (!sl.isRegistered<Get${className}UseCase>()) {
+    sl.registerLazySingleton<Get${className}UseCase>(
+      () => Get${className}UseCase(sl<${className}Repository>()),
+    );
+  }
+  if (!sl.isRegistered<${className}$blocType>()) {
+    sl.registerFactory<${className}$blocType>(
+      () => ${className}$blocType(sl<Get${className}UseCase>()),
+    );
+  }
+''';
+    }).join('\n');
+
+    return '''
 import 'package:get_it/get_it.dart';
 import 'package:injectable/injectable.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/network/api_interceptor.dart';
 import '../core/network/dio_client.dart';
+$featureImports
 import 'injection.config.dart';
 
 final sl = GetIt.instance;
@@ -292,8 +331,11 @@ Future<void> configureDependencies() async {
       () => DioClient(sl<ApiInterceptor>()),
     );
   }
+
+$featureRegistrations
 }
 ''';
+  }
 
   static String _injectionConfig() => '''
 // GENERATED CODE — DO NOT MODIFY BY HAND
